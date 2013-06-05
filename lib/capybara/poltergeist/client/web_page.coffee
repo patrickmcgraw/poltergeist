@@ -217,9 +217,8 @@ class Poltergeist.WebPage
   # hence the 'that' closure.
   bindCallback: (name) ->
     that = this
-    console.log('bind callback', name)
     @native[name] = ->
-      console.log('fire callback', name, arguments)
+      console.log('fire callback', name, JSON.stringify(arguments))
       if that[name + 'Native']? # For internal callbacks
         result = that[name + 'Native'].apply(that, arguments)
 
