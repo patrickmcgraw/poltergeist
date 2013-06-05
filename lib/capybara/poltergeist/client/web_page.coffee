@@ -218,7 +218,6 @@ class Poltergeist.WebPage
   bindCallback: (name) ->
     that = this
     @native[name] = ->
-      console.log('fire callback', name, JSON.stringify(arguments))
       if that[name + 'Native']? # For internal callbacks
         result = that[name + 'Native'].apply(that, arguments)
 
