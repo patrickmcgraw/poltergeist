@@ -25,6 +25,10 @@ module Capybara::Poltergeist
       self.debug = @debug if @debug
     end
 
+    def js_alert_messages
+      command 'js_alert_messages'
+    end
+
     def visit(url)
       command 'visit', url
     end

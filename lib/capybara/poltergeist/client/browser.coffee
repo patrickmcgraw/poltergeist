@@ -47,6 +47,14 @@ class Poltergeist.Browser
         # window.
         setTimeout((=> this.push_window(name)), 0)
 
+    @alert_messages = []
+    @page.onAlert = (msg) =>
+      @alert_messages.push(msg)
+
+  js_alert_messages: ->
+    this.sendResponse(@alert_messages)
+    @alert_messages = []
+
   runCommand: (name, args) ->
     this.setState "default"
     this[name].apply(this, args)
