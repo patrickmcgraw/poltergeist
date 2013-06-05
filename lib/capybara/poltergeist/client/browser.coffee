@@ -49,6 +49,7 @@ class Poltergeist.Browser
 
     @alert_messages = []
     @page.onAlert = (msg) =>
+      console.log "onAlert", msg
       @alert_messages.push(msg)
 
   js_alert_messages: ->
