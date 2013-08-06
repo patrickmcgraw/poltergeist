@@ -240,7 +240,6 @@ class Poltergeist.WebPage
         result = that[name + 'Native'].apply(that, arguments)
 
       if result != false && that[name]? # For externally set callbacks
-        console.log "Fired #{name}" if name is 'onAlert' or name is 'onConfirm'
         that[name].apply(that, arguments)
 
   # Any error raised here or inside the evaluate will get reported to
