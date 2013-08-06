@@ -54,7 +54,7 @@ class Poltergeist.Browser
     @page.onAlert = (msg) =>
       @alert_messages.push(msg)
 
-    @page.onConfirm = (msg)=>
+    @page.native.onConfirm = (msg)=>
       console.log "reset page onConfirm handling", msg
       @confirm_messages.push(msg)
       return @confirm_return
