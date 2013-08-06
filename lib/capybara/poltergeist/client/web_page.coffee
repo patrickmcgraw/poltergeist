@@ -242,6 +242,8 @@ class Poltergeist.WebPage
       if result != false && that[name]? # For externally set callbacks
         that[name].apply(that, arguments)
 
+      console.log "bindCallback:", name, result
+
   # Any error raised here or inside the evaluate will get reported to
   # phantom.onError. If result is null, that means there was an error
   # inside the agent.

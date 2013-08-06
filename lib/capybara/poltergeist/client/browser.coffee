@@ -48,10 +48,16 @@ class Poltergeist.Browser
         setTimeout((=> this.push_window(name)), 0)
 
     @confirm_messages = []
+    @confirm_return = true
 
     @alert_messages = []
     @page.onAlert = (msg) =>
       @alert_messages.push(msg)
+
+    @page.onConfirm = (msg)=>
+      console.log "reset page onConfirm handling", msg
+      @confirm_messages.push(msg)
+      return @confirm_return
 
   js_alert_messages: ->
     @sendResponse(@alert_messages)
