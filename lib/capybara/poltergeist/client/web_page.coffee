@@ -235,14 +235,14 @@ class Poltergeist.WebPage
   # hence the 'that' closure.
   bindCallback: (name) ->
     that = this
+    console.log "bindCallback: #{name}"
     @native[name] = ->
       if that[name + 'Native']? # For internal callbacks
         result = that[name + 'Native'].apply(that, arguments)
 
       if result != false && that[name]? # For externally set callbacks
+        console.log "Fired #{name}" if name is 'onAlert' or name is 'onConfirm'
         that[name].apply(that, arguments)
-
-      console.log "bindCallback:", name, result
 
   # Any error raised here or inside the evaluate will get reported to
   # phantom.onError. If result is null, that means there was an error
