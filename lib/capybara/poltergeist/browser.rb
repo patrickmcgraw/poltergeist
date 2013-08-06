@@ -1,5 +1,5 @@
 require "capybara/poltergeist/errors"
-require 'json'
+require 'multi_json'
 require 'time'
 
 module Capybara::Poltergeist
@@ -122,6 +122,10 @@ module Capybara::Poltergeist
       command 'pop_frame'
     end
 
+    def window_handles
+      command 'pages'
+    end
+
     def within_window(name, &block)
       command 'push_window', name
       yield
@@ -178,8 +182,20 @@ module Capybara::Poltergeist
       command('equals', page_id, id, other_id)
     end
 
+    def get_headers
+      command 'get_headers'
+    end
+
     def set_headers(headers)
       command 'set_headers', headers
+    end
+
+    def add_headers(headers)
+      command 'add_headers', headers
+    end
+
+    def add_header(header, permanent)
+      command 'add_header', header, permanent
     end
 
     def response_headers
@@ -225,7 +241,7 @@ module Capybara::Poltergeist
       message = { 'name' => name, 'args' => args }
       log message.inspect
 
-      json = JSON.load(server.send(JSON.generate(message)))
+      json = JSON.load(server.send(JSON.dump(message)))
       log json.inspect
 
       if json['error']

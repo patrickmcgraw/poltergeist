@@ -100,10 +100,6 @@ module Capybara::Poltergeist
     end
 
     it 'supports rendering the whole of a page that goes outside the viewport' do
-      if RUBY_VERSION >= "2.0.0"
-        pending "image_size seems to be incompatible with Ruby 2"
-      end
-
       file = POLTERGEIST_ROOT + '/spec/tmp/screenshot.png'
       @session.visit('/poltergeist/long_page')
       @driver.save_screenshot(file)
@@ -132,6 +128,12 @@ module Capybara::Poltergeist
         @driver.body.should include('HOST: foo.com')
       end
 
+      it 'allows headers to be read' do
+        expect(@driver.headers).to eq({})
+        @driver.headers = { 'User-Agent' => 'PhantomJS', 'Host' => 'foo.com' }
+        expect(@driver.headers).to eq('User-Agent' => 'PhantomJS', 'Host' => 'foo.com')
+      end
+
       it 'supports User-Agent' do
         @driver.headers = { 'User-Agent' => 'foo' }
         @session.visit '/'
@@ -151,6 +153,36 @@ module Capybara::Poltergeist
           }
         JS
         @driver.body.should include('X_OMG: wat')
+      end
+
+      it 'adds new headers' do
+        @driver.headers = { 'User-Agent' => 'PhantomJS', 'Host' => 'foo.com' }
+        @driver.add_headers('User-Agent' => 'Poltergeist', 'Appended' => 'true')
+        @session.visit('/poltergeist/headers')
+        expect(@driver.body).to include('USER_AGENT: Poltergeist')
+        expect(@driver.body).to include('HOST: foo.com')
+        expect(@driver.body).to include('APPENDED: true')
+      end
+
+      it 'sets headers on the initial request' do
+        @driver.headers = { 'PermanentA' => 'a' }
+        @driver.add_headers('PermanentB' => 'b')
+        @driver.add_header('Referer', 'http://google.com', :permanent => false)
+        @driver.add_header('TempA', 'a', :permanent => false)
+
+        @session.visit('/poltergeist/headers_with_ajax')
+        initial_request = @session.find(:css, '#initial_request').text
+        ajax_request = @session.find(:css, '#ajax_request').text
+
+        expect(initial_request).to include('PERMANENTA: a')
+        expect(initial_request).to include('PERMANENTB: b')
+        expect(initial_request).to include('REFERER: http://google.com')
+        expect(initial_request).to include('TEMPA: a')
+
+        expect(ajax_request).to include('PERMANENTA: a')
+        expect(ajax_request).to include('PERMANENTB: b')
+        expect(ajax_request).not_to include('REFERER: http://google.com')
+        expect(ajax_request).not_to include('TEMPA: a')
       end
     end
 
@@ -375,6 +407,11 @@ module Capybara::Poltergeist
         @driver.body.should include('omg')
       end
 
+      it 'can set cookies when a space exists in the url' do
+        @session.visit '/poltergeist/arbitrary_path/200/foo bar'
+        @driver.set_cookie 'capybara', 'omg'
+      end
+
       it 'can set cookies with custom settings' do
         @driver.set_cookie 'capybara', 'omg', :path => '/poltergeist'
 
@@ -439,5 +476,28 @@ module Capybara::Poltergeist
         driver.quit
       end
     end
+
+    it 'lists the open windows' do
+      @session.visit '/'
+
+      @session.evaluate_script <<-CODE
+          window.open('/poltergeist/simple', 'popup')
+      CODE
+
+      @session.evaluate_script <<-CODE
+          window.open('/poltergeist/simple', 'popup2')
+      CODE
+
+      @session.within_window 'popup2' do
+        @session.html.should include('Test')
+        @session.evaluate_script('window.close()')
+      end
+
+      sleep 0.1;
+
+      @driver.browser.window_handles.should == ["popup"]
+      @driver.window_handles.should == ["popup"]
+    end
+
   end
 end

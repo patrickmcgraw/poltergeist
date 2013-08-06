@@ -1,10 +1,11 @@
 require "timeout"
 require "capybara/poltergeist/utility"
+require 'cliver'
 
 module Capybara::Poltergeist
   class Client
     PHANTOMJS_SCRIPT  = File.expand_path('../client/compiled/main.js', __FILE__)
-    PHANTOMJS_VERSION = '1.8.1'
+    PHANTOMJS_VERSION = ['~> 1.8','>= 1.8.1']
     PHANTOMJS_NAME    = 'phantomjs'
 
     KILL_TIMEOUT = 2 # seconds
@@ -15,11 +16,26 @@ module Capybara::Poltergeist
       client
     end
 
+    # Returns a proc, that when called will attempt to kill the given process.
+    # This is because implementing ObjectSpace.define_finalizer is tricky.
+    # Hat-Tip to @mperham for describing in detail:
+    # http://www.mikeperham.com/2010/02/24/the-trouble-with-ruby-finalizers/
+    def self.process_killer(pid)
+      proc do
+        begin
+          Process.kill('KILL', pid)
+        rescue Errno::ESRCH, Errno::ECHILD
+        end
+      end
+    end
+
     attr_reader :pid, :server, :path, :window_size, :phantomjs_options
 
     def initialize(server, options = {})
       @server            = server
-      @path              = options[:path]              || PHANTOMJS_NAME
+      @path              = Cliver::detect!((options[:path] || PHANTOMJS_NAME),
+                                           *PHANTOMJS_VERSION)
+
       @window_size       = options[:window_size]       || [1024, 768]
       @phantomjs_options = options[:phantomjs_options] || []
       @phantomjs_logger  = options[:phantomjs_logger]  || $stdout
@@ -29,16 +45,19 @@ module Capybara::Poltergeist
     end
 
     def start
-      check_phantomjs_version
-      read, write = IO.pipe
+      @read_io, @write_io = IO.pipe
       @out_thread = Thread.new {
-        while !read.eof? && data = read.readpartial(1024)
+        while !@read_io.eof? && data = @read_io.readpartial(1024)
           @phantomjs_logger.write(data)
         end
       }
 
-      redirect_stdout(write) do
-        @pid = Process.spawn(*command.map(&:to_s), pgroup: true)
+      process_options = {}
+      process_options[:pgroup] = true unless Capybara::Poltergeist.windows?
+
+      redirect_stdout do
+        @pid = Process.spawn(*command.map(&:to_s), process_options)
+        ObjectSpace.define_finalizer(self, self.class.process_killer(@pid) )
       end
     end
 
@@ -59,7 +78,9 @@ module Capybara::Poltergeist
         rescue Errno::ESRCH, Errno::ECHILD
           # Zed's dead, baby
         end
-
+        ObjectSpace.undefine_finalizer(self)
+        @write_io.close
+        @read_io.close
         @out_thread.kill
         @pid = nil
       end
@@ -81,33 +102,13 @@ module Capybara::Poltergeist
 
     private
 
-    def check_phantomjs_version
-      return if @phantomjs_version_checked
-
-      version = `#{path} --version` rescue nil
-
-      if version.nil? || $? != 0
-        raise PhantomJSFailed.new($?)
-      else
-        major, minor, build = version.chomp.split('.').map(&:to_i)
-        min_major, min_minor, min_build = PHANTOMJS_VERSION.split('.').map(&:to_i)
-        if major < min_major ||
-            major == min_major && minor < min_minor ||
-            major == min_major && minor == min_minor && build < min_build
-          raise PhantomJSTooOld.new(version)
-        end
-      end
-
-      @phantomjs_version_checked = true
-    end
-
     # This abomination is because JRuby doesn't support the :out option of
     # Process.spawn
-    def redirect_stdout(to)
+    def redirect_stdout
       prev = STDOUT.dup
       prev.autoclose = false
-      $stdout = to
-      STDOUT.reopen(to)
+      $stdout = @write_io
+      STDOUT.reopen(@write_io)
       yield
     ensure
       STDOUT.reopen(prev)

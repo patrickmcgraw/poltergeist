@@ -143,6 +143,10 @@ module Capybara::Poltergeist
       browser.within_window(name, &block)
     end
 
+    def window_handles
+      browser.window_handles
+    end
+
     def reset!
       browser.reset
       @started = false
@@ -162,8 +166,21 @@ module Capybara::Poltergeist
       browser.network_traffic
     end
 
+    def headers
+      browser.get_headers
+    end
+
     def headers=(headers)
       browser.set_headers(headers)
+    end
+
+    def add_headers(headers)
+      browser.add_headers(headers)
+    end
+
+    def add_header(name, value, options = {})
+      permanent = options.fetch(:permanent, true)
+      browser.add_header({ name => value }, permanent)
     end
 
     def response_headers
@@ -179,7 +196,7 @@ module Capybara::Poltergeist
       options[:value] ||= value
       options[:domain] ||= begin
         if @started
-          URI.parse(browser.current_url).host
+          URI.parse(URI.escape(browser.current_url)).host
         else
           Capybara.app_host || "127.0.0.1"
         end

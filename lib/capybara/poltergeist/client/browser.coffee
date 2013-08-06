@@ -90,7 +90,10 @@ class Poltergeist.Browser
   visit: (url) ->
     this.setState 'loading'
 
-    prev_url = @page.currentUrl()
+    # Prevent firing `page.onInitialized` event twice. Calling currentUrl
+    # method before page is actually opened fires this event for the first time.
+    # The second time will be in the right place after `page.open`
+    prev_url = if @page.source() is null then 'about:blank' else @page.currentUrl()
 
     @page.open(url)
 
@@ -178,6 +181,9 @@ class Poltergeist.Browser
         setTimeout((=> this.push_frame(name, timeout)), 50)
       else
         @owner.sendError(new Poltergeist.FrameNotFound(name))
+
+  pages: ->
+    this.sendResponse(@page.pages())
 
   pop_frame: ->
     this.sendResponse(@page.popFrame())
@@ -271,11 +277,24 @@ class Poltergeist.Browser
   network_traffic: ->
     this.sendResponse(@page.networkTraffic())
 
+  get_headers: ->
+    this.sendResponse(@page.getCustomHeaders())
+
   set_headers: (headers) ->
     # Workaround for https://code.google.com/p/phantomjs/issues/detail?id=745
     @page.setUserAgent(headers['User-Agent']) if headers['User-Agent']
     @page.setCustomHeaders(headers)
     this.sendResponse(true)
+
+  add_headers: (headers) ->
+    allHeaders = @page.getCustomHeaders()
+    for name, value of headers
+      allHeaders[name] = value
+    this.set_headers(allHeaders)
+
+  add_header: (header, permanent) ->
+    @page.addTempHeader(header) unless permanent
+    this.add_headers(header)
 
   response_headers: ->
     this.sendResponse(@page.responseHeaders())

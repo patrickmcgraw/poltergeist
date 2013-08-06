@@ -153,17 +153,33 @@ Capybara.javascript_driver = :poltergeist_debug
 [Read more
 here](http://jonathanleighton.com/articles/2012/poltergeist-0-6-0/)
 
-### Setting request headers ###
+### Manipulating request headers ###
 
-Additional HTTP request headers can be set like so:
+You can manipulate HTTP request headers with these methods:
+
+``` ruby
+page.driver.headers # => {}
+page.driver.headers = { "User-Agent" => "Poltergeist" }
+page.driver.add_headers("Referer" => "https://example.com")
+page.driver.headers # => { "User-Agent" => "Poltergeist", "Referer" => "https://example.com" }
+```
+
+Notice that `headers=` will overwrite already set headers. You should use
+`add_headers` if you want to add a few more. These headers will apply to all
+subsequent HTTP requests (including requests for assets, AJAX, etc). They will
+be automatically cleared at the end of the test. You have ability to set headers
+only for the initial request:
 
 ``` ruby
 page.driver.headers = { "User-Agent" => "Poltergeist" }
+page.driver.add_header("Referer", "http://example.com", permanent: false)
+page.driver.headers # => { "User-Agent" => "Poltergeist", "Referer" => "http://example.com" }
+visit(login_path)
+page.driver.headers # => { "User-Agent" => "Poltergeist" }
 ```
 
-The extra headers will apply to all subsequent HTTP requests (including
-requests for assets, AJAX, etc). They will be automatically cleared at
-the end of the test.
+This way your temporary headers will be sent only for the initial request, all
+subsequent request will only contain your permanent headers.
 
 ### Inspecting network traffic ###
 
@@ -186,6 +202,32 @@ The following methods are used to inspect and manipulate cookies:
   object.
 * `page.driver.remove_cookie(name)` - remove a cookie
 
+### Window switching ###
+
+The following methods can be used to execute commands inside different windows:
+
+* `page.driver.window_handles` - an array containing the names of all
+  the open windows.
+
+* `page.within_window(name) { # actions }` -  executes
+  the passed block in the context of the named window.
+
+Example:
+
+``` ruby
+find_link("Login with Facebook").trigger("click")
+
+sleep(0.1)
+
+fb_popup = page.driver.window_handles.last
+page.within_window fb_popup do
+  fill_in "email", :with => "facebook_email@email.tst"
+  fill_in "pass", :with => "my_pass"
+  click_button "Log In"
+end
+```
+
+
 ## Customization ##
 
 You can customize the way that Capybara sets up Poltegeist via the following code in your
@@ -205,7 +247,7 @@ end
     output, but this goes to `STDOUT` due to technical limitations.
 *   `:logger` (Object responding to `puts`) - When present, debug output is written to this object
 *   `:phantomjs_logger` (`IO` object) - Where the `STDOUT` from PhantomJS is written to. This is
-    where you `console.log` statements will show up. Default: `STDOUT`
+    where your `console.log` statements will show up. Default: `STDOUT`
 *   `:timeout` (Numeric) - The number of seconds we'll wait for a response
     when communicating with PhantomJS. Default is 30.
 *   `:inspector` (Boolean, String) - See 'Remote Debugging', above.
@@ -294,6 +336,13 @@ documentation on asynchronous
 Javascript](https://github.com/jnicklas/capybara#asynchronous-javascript-ajax-and-friends)
 which explains the tools that Capybara provides for dealing with this.
 
+### Memory leak ###
+
+If you run a few capybara sessions manually please make sure you've called
+`session.driver.quit` when you don't need session anymore. Forgetting about this
+causes memory leakage and your system's resources can be exhausted earlier than
+you may expect.
+
 ### General troubleshooting hints ###
 
 * Configure Poltergeist with `:debug` turned on so you can see its
@@ -329,11 +378,23 @@ Include as much information as possible. For example:
 #### Features ####
 
 *   Can set cookies for given domain
+*   Can get open window names with window_handles [Issue #178]
+*   Added ability to read and append headers (Dmitry Vorotilin) [Issue #187]
+*   Added ability to set headers only for the first request (Dmitry Vorotilin) [Issue #337]
+*   Depend on Cliver for command-line dependency detection.
 
 #### Bug fixes ####
 
 *   Fix `within_window` finding window after close/open
     (Ryan Schlesinger) [Issue #312]
+*   Fix "wrong exec option symbol: pgroup" error on windows (Andrew Meyer)
+    [Issue #314]
+*   Fixed closing of open pipes after use (driver.quit now performs pipe.close) [Issue #310]
+*   Fix NoMethodError when using has_css with a count on svg elements
+*   Fix URI::InvalidURIError raised when setting a cookie after loading a
+    page with a space in the url [Issue #349]
+*   Fix leak of phantomjs processes by adding a GC finalizer to the
+    Capybara::Poltergeist::Client object that creates them [Issue #348]
 
 ### 1.3.0 ###
 

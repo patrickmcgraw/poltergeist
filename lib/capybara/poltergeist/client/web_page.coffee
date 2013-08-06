@@ -12,9 +12,10 @@ class Poltergeist.WebPage
   constructor: (@native) ->
     @native or= require('webpage').create()
 
-    @_source         = ""
+    @_source         = null
     @_errors         = []
     @_networkTraffic = {}
+    @_temp_headers   = {}
     @frames          = []
 
     for callback in WebPage.CALLBACKS
@@ -33,6 +34,7 @@ class Poltergeist.WebPage
   onInitializedNative: ->
     @_source = null
     @injectAgent()
+    this.removeTempHeaders()
     this.setScrollPosition(left: 0, top: 0)
 
   injectAgent: ->
@@ -145,8 +147,21 @@ class Poltergeist.WebPage
   setUserAgent: (userAgent) ->
     @native.settings.userAgent = userAgent
 
+  getCustomHeaders: ->
+    @native.customHeaders
+
   setCustomHeaders: (headers) ->
     @native.customHeaders = headers
+
+  addTempHeader: (header) ->
+    for name, value of header
+      @_temp_headers[name] = value
+
+  removeTempHeaders: ->
+    allHeaders = this.getCustomHeaders()
+    for name, value of @_temp_headers
+      delete allHeaders[name]
+    this.setCustomHeaders(allHeaders)
 
   pushFrame: (name) ->
     if @native.switchToFrame(name)
@@ -154,6 +169,9 @@ class Poltergeist.WebPage
       true
     else
       false
+
+  pages: ->
+    @native.pagesWindowName
 
   popFrame: ->
     @frames.pop()

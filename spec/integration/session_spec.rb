@@ -30,10 +30,23 @@ describe Capybara::Session do
         expect { @session.click_link "JS redirect" }.to raise_error(Capybara::ElementNotFound)
       end
 
+      it 'hovers an element' do
+        @session.visit('/poltergeist/with_js')
+        expect(@session.find(:css, '#hidden_link span', :visible => false)).to_not be_visible
+        @session.find(:css, '#hidden_link').hover
+        expect(@session.find(:css, '#hidden_link span')).to be_visible
+      end
+
       it 'hovers an element before clicking it' do
         @session.visit('/poltergeist/with_js')
         @session.click_link "Hidden link"
         @session.current_path.should == '/'
+      end
+
+      it "doesn't raise error when asserting svg elements with a count that is not what is in the dom" do
+        @session.visit('/poltergeist/with_js')
+        expect { @session.has_css?('svg circle', count: 2) }.to_not raise_error
+        @session.should_not have_css('svg circle', count: 2)
       end
 
       context "when someone (*cough* prototype *cough*) messes with Array#toJSON" do
@@ -68,7 +81,7 @@ describe Capybara::Session do
           end
 
           it "clicks properly" do
-            expect { @session.click_link "O hai" }.to_not raise_error(Capybara::Poltergeist::MouseEventFailed)
+            expect { @session.click_link "O hai" }.not_to raise_error
           end
 
           after do
@@ -150,8 +163,11 @@ describe Capybara::Session do
       end
 
       it 'attaches a file when passed a Pathname' do
+        filename = Pathname.new('spec/tmp/a_test_pathname').expand_path
+        File.open(filename, 'w') { |f| f.write('text') }
+
         element = @session.find(:css, '#change_me_file')
-        element.set Pathname.new("a_test_pathname")
+        element.set(filename)
         element.value.should == 'C:\fakepath\a_test_pathname'
       end
     end
