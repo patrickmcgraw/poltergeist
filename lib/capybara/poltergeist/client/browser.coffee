@@ -63,6 +63,8 @@ class Poltergeist.Browser
       @confirm_messages.push(msg)
       @page.onConfirm = null
       return true
+      
+    @sendResponse "success"
 
   # Runs callback once and then disarms
   arm_js_confirm_reject_handling: ->
@@ -70,6 +72,8 @@ class Poltergeist.Browser
       @confirm_messages.push(msg)
       @page.onConfirm = null
       return false
+
+    @sendResponse "success"
 
   js_confirm_messages: ->
     @sendResponse(@confirm_messages)
