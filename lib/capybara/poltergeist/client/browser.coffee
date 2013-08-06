@@ -47,13 +47,33 @@ class Poltergeist.Browser
         # window.
         setTimeout((=> this.push_window(name)), 0)
 
+    @confirm_messages = []
+
     @alert_messages = []
     @page.onAlert = (msg) =>
       @alert_messages.push(msg)
 
   js_alert_messages: ->
-    this.sendResponse(@alert_messages)
+    @sendResponse(@alert_messages)
     @alert_messages = []
+
+  # Runs callback once and then disarms
+  arm_js_confirm_accept_handling: ->
+    @page.onConfirm = (msg) =>
+      @confirm_messages.push(msg)
+      @page.onConfirm = null
+      return true
+
+  # Runs callback once and then disarms
+  arm_js_confirm_reject_handling: ->
+    @page.onConfirm = (msg) =>
+      @confirm_messages.push(msg)
+      @page.onConfirm = null
+      return false
+
+  js_confirm_messages: ->
+    @sendResponse(@confirm_messages)
+    @confirm_messages = []
 
   runCommand: (name, args) ->
     this.setState "default"

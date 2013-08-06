@@ -29,6 +29,18 @@ module Capybara::Poltergeist
       command 'js_alert_messages'
     end
 
+    def arm_js_confirm_handling(return_val)
+      if return_val
+        command 'arm_js_confirm_accept_handling'
+      else
+        command 'arm_js_confirm_reject_handling'
+      end
+    end
+
+    def js_confirm_messages
+      command 'js_confirm_messages'
+    end
+
     def visit(url)
       command 'visit', url
     end
