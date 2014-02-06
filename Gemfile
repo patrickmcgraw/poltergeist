@@ -1,4 +1,9 @@
-source "https://rubygems.org"
+source 'https://rubygems.org'
+
 gemspec
 
-gem 'rspec-rerun', github: 'jonleighton/rspec-rerun'
+platforms :rbx do
+  gem 'rubysl'
+  gem 'racc'
+  gem 'json'
+end

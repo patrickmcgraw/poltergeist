@@ -157,13 +157,33 @@ module Capybara::Poltergeist
     end
     alias_method :render, :save_screenshot
 
+    def render_base64(format = :png, options = {})
+      browser.render_base64(format, options)
+    end
+
+    def paper_size=(size = {})
+      browser.set_paper_size(size)
+    end
+
+    def zoom_factor=(zoom_factor)
+      browser.set_zoom_factor(zoom_factor)
+    end
+
     def resize(width, height)
       browser.resize(width, height)
     end
     alias_method :resize_window, :resize
 
+    def scroll_to(left, top)
+      browser.scroll_to(left, top)
+    end
+
     def network_traffic
       browser.network_traffic
+    end
+
+    def clear_network_traffic
+      browser.clear_network_traffic
     end
 
     def headers
@@ -196,7 +216,7 @@ module Capybara::Poltergeist
       options[:value] ||= value
       options[:domain] ||= begin
         if @started
-          URI.parse(URI.escape(browser.current_url)).host
+          URI.parse(browser.current_url).host
         else
           Capybara.app_host || "127.0.0.1"
         end
@@ -211,6 +231,17 @@ module Capybara::Poltergeist
 
     def cookies_enabled=(flag)
       browser.cookies_enabled = flag
+    end
+
+    # * PhantomJS with set settings doesn't send `Authorize` on POST request
+    # * With manually set header PhantomJS makes next request with
+    # `Authorization: Basic Og==` header when settings are empty and the
+    # response was `401 Unauthorized` (which means Base64.encode64(':')).
+    # Combining both methods to reach proper behavior.
+    def basic_authorize(user, password)
+      browser.set_http_auth(user, password)
+      credentials = ["#{user}:#{password}"].pack('m*').strip
+      add_header('Authorization', "Basic #{credentials}")
     end
 
     def debug
@@ -234,6 +265,14 @@ module Capybara::Poltergeist
 
     def invalid_element_errors
       [Capybara::Poltergeist::ObsoleteNode, Capybara::Poltergeist::MouseEventFailed]
+    end
+
+    def go_back
+      browser.go_back
+    end
+
+    def go_forward
+      browser.go_forward
     end
   end
 end

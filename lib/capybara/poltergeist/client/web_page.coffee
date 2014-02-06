@@ -3,7 +3,7 @@ class Poltergeist.WebPage
                 'onLoadStarted', 'onResourceRequested', 'onResourceReceived',
                 'onError', 'onNavigationRequested', 'onUrlChanged', 'onPageCreated']
 
-  @DELEGATES = ['open', 'sendEvent', 'uploadFile', 'release', 'render']
+  @DELEGATES = ['open', 'sendEvent', 'uploadFile', 'release', 'render', 'renderBase64', 'goBack', 'goForward']
 
   @COMMANDS  = ['currentUrl', 'find', 'nodeCall', 'documentSize', 'beforeUpload', 'afterUpload']
 
@@ -93,8 +93,15 @@ class Poltergeist.WebPage
         @_statusCode      = response.status
         @_responseHeaders = response.headers
 
+  setHttpAuth: (user, password) ->
+    @native.settings.userName = user
+    @native.settings.password = password
+
   networkTraffic: ->
     @_networkTraffic
+
+  clearNetworkTraffic: ->
+    @_networkTraffic = {}
 
   content: ->
     @native.frameContent
@@ -132,6 +139,12 @@ class Poltergeist.WebPage
   setViewportSize: (size) ->
     @native.viewportSize = size
 
+  setZoomFactor: (zoom_factor) ->
+    @native.zoomFactor = zoom_factor
+
+  setPaperSize: (size) ->
+    @native.paperSize = size
+
   scrollPosition: ->
     @native.scrollPosition
 
@@ -143,6 +156,12 @@ class Poltergeist.WebPage
 
   setClipRect: (rect) ->
     @native.clipRect = rect
+
+  elementBounds: (selector) ->
+    @native.evaluate(
+      (selector) -> document.querySelector(selector).getBoundingClientRect(),
+      selector
+    )
 
   setUserAgent: (userAgent) ->
     @native.settings.userAgent = userAgent
@@ -256,8 +275,15 @@ class Poltergeist.WebPage
         when 'PoltergeistAgent.ObsoleteNode'
           throw new Poltergeist.ObsoleteNode
         when 'PoltergeistAgent.InvalidSelector'
-          throw new Poltergeist.InvalidSelector(args[1])
+          [method, selector] = args
+          throw new Poltergeist.InvalidSelector(method, selector)
         else
           throw new Poltergeist.BrowserError(result.error.message, result.error.stack)
     else
       result.value
+
+  canGoBack: ->
+    @native.canGoBack
+
+  canGoForward: ->
+    @native.canGoForward

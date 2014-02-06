@@ -1,8 +1,5 @@
 module Capybara::Poltergeist
   class Node < Capybara::Driver::Node
-    NBSP = "\xC2\xA0"
-    NBSP.force_encoding("UTF-8") if NBSP.respond_to?(:force_encoding)
-
     attr_reader :page_id, :id
 
     def initialize(driver, page_id, id)
@@ -72,6 +69,9 @@ module Capybara::Poltergeist
         end
       elsif tag_name == 'textarea'
         command :set, value.to_s
+      elsif self[:contenteditable] == 'true'
+        command :delete_text
+        send_keys(value.to_s)
       end
     end
 
@@ -128,10 +128,15 @@ module Capybara::Poltergeist
       command :equals, other.id
     end
 
+    def send_keys(*keys)
+      command :send_keys, keys
+    end
+    alias_method :send_key, :send_keys
+
     private
 
     def filter_text(text)
-      text.to_s.gsub(NBSP, ' ').gsub(/\s+/u, ' ').strip
+      Capybara::Helpers.normalize_whitespace(text.to_s)
     end
   end
 end

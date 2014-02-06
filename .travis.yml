@@ -1,9 +1,7 @@
 script: bundle exec rake ci
+before_script: phantomjs --version
 rvm:
   - 2.0.0
   - 1.9.3
-  - rbx-19mode
+  - rbx
   - jruby-19mode
-matrix:
-  allow_failures:
-    - rvm: jruby-19mode

@@ -20,7 +20,7 @@ module Capybara
       end
 
       def to_s
-        stack
+        [message, stack].join("\n")
       end
     end
 
@@ -65,13 +65,17 @@ module Capybara
     end
 
     class InvalidSelector < ClientError
+      def method
+        response['args'][0]
+      end
+
       def selector
-        response['args'].first
+        response['args'][1]
       end
 
       def message
         "The browser raised a syntax error while trying to evaluate " \
-          "the selector #{selector.inspect}"
+          "#{method} selector #{selector.inspect}"
       end
     end
 
@@ -142,7 +146,7 @@ module Capybara
     class PhantomJSTooOld < Error
       def self.===(other)
         if Cliver::Dependency::VersionMismatch === other
-          warn "{name} exception has been deprecated in favor of using the " +
+          warn "#{name} exception has been deprecated in favor of using the " +
                "cliver gem for command-line dependency detection. Please " +
                "handle Cliver::Dependency::VersionMismatch instead."
           true
@@ -155,7 +159,7 @@ module Capybara
     class PhantomJSFailed < Error
       def self.===(other)
         if Cliver::Dependency::NotMet === other
-          warn "{name} exception has been deprecated in favor of using the " +
+          warn "#{name} exception has been deprecated in favor of using the " +
                "cliver gem for command-line dependency detection. Please " +
                "handle Cliver::Dependency::NotMet instead."
           true

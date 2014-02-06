@@ -154,6 +154,9 @@ class Poltergeist.Browser
   visible_text: (page_id, id) ->
     this.sendResponse this.node(page_id, id).visibleText()
 
+  delete_text: (page_id, id) ->
+    this.sendResponse this.node(page_id, id).deleteText()
+
   attribute: (page_id, id, name) ->
     this.sendResponse this.node(page_id, id).getAttribute(name)
 
@@ -279,20 +282,52 @@ class Poltergeist.Browser
     this.resetPage()
     this.sendResponse(true)
 
-  render: (path, full) ->
+  scroll_to: (left, top) ->
+    @page.setScrollPosition(left: left, top: top)
+    this.sendResponse(true)
+
+  send_keys: (page_id, id, keys) ->
+    # Programmatically generated focus doesn't work for `sendKeys`.
+    # That's why we need something more realistic like user behavior.
+    this.node(page_id, id).mouseEvent('click')
+    for sequence in keys
+      key = if sequence.key? then @page.native.event.key[sequence.key] else sequence
+      @page.sendEvent('keypress', key)
+    this.sendResponse(true)
+
+  render_base64: (format, full, selector = null)->
+    this.set_clip_rect(full, selector)
+    encoded_image = @page.renderBase64(format)
+    this.sendResponse(encoded_image)
+
+  render: (path, full, selector = null) ->
+    dimensions = this.set_clip_rect(full, selector)
+    @page.setScrollPosition(left: 0, top: 0)
+    @page.render(path)
+    @page.setScrollPosition(left: dimensions.left, top: dimensions.top)
+    this.sendResponse(true)
+
+  set_clip_rect: (full, selector) ->
     dimensions = @page.validatedDimensions()
-    document   = dimensions.document
-    viewport   = dimensions.viewport
+    [document, viewport] = [dimensions.document, dimensions.viewport]
 
-    if full
-      @page.setScrollPosition(left: 0, top: 0)
-      @page.setClipRect(left: 0, top: 0, width: document.width, height: document.height)
-      @page.render(path)
-      @page.setScrollPosition(left: dimensions.left, top: dimensions.top)
+    rect = if full
+      left: 0, top: 0, width: document.width, height: document.height
     else
-      @page.setClipRect(left: 0, top: 0, width: viewport.width, height: viewport.height)
-      @page.render(path)
+      if selector?
+        @page.elementBounds(selector)
+      else
+        left: 0, top: 0, width: viewport.width, height: viewport.height
 
+    @page.setClipRect(rect)
+    dimensions
+
+  set_paper_size: (size) ->
+    @page.setPaperSize(size)
+    this.sendResponse(true)
+
+  set_zoom_factor: (zoom_factor) ->
+    @page.setZoomFactor(zoom_factor)
     this.sendResponse(true)
 
   resize: (width, height) ->
@@ -301,6 +336,10 @@ class Poltergeist.Browser
 
   network_traffic: ->
     this.sendResponse(@page.networkTraffic())
+
+  clear_network_traffic: ->
+    @page.clearNetworkTraffic()
+    this.sendResponse(true)
 
   get_headers: ->
     this.sendResponse(@page.getCustomHeaders())
@@ -341,6 +380,10 @@ class Poltergeist.Browser
     phantom.cookiesEnabled = flag
     this.sendResponse(true)
 
+  set_http_auth: (user, password) ->
+    @page.setHttpAuth(user, password)
+    this.sendResponse(true)
+
   set_js_errors: (value) ->
     @js_errors = value
     this.sendResponse(true)
@@ -358,3 +401,11 @@ class Poltergeist.Browser
   # This command is purely for testing error handling
   browser_error: ->
     throw new Error('zomg')
+
+  go_back: ->
+    this.page.goBack() if this.page.canGoBack
+    this.sendResponse(true)
+
+  go_forward: ->
+    this.page.goForward() if this.page.canGoForward
+    this.sendResponse(true)

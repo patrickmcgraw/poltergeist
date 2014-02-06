@@ -25,7 +25,7 @@ class PoltergeistAgent
         throw error
 
   currentUrl: ->
-    window.location.toString()
+    encodeURI(window.location.href)
 
   find: (method, selector, within = document) ->
     try
@@ -37,7 +37,8 @@ class PoltergeistAgent
 
       this.register(el) for el in results
     catch error
-      if error.code == DOMException.SYNTAX_ERR
+      # DOMException.INVALID_EXPRESSION_ERR is undefined, using pure code
+      if error.code == DOMException.SYNTAX_ERR || error.code == 51
         throw new PoltergeistAgent.InvalidSelector
       else
         throw error
@@ -140,6 +141,13 @@ class PoltergeistAgent.Node
     else
       @element.innerText
 
+  deleteText: ->
+    range = document.createRange()
+    range.selectNodeContents(@element)
+    window.getSelection().removeAllRanges()
+    window.getSelection().addRange(range)
+    window.getSelection().deleteFromDocument()
+
   getAttribute: (name) ->
     if name == 'checked' || name == 'selected'
       @element[name]
@@ -164,13 +172,16 @@ class PoltergeistAgent.Node
     @element.value = ''
     this.trigger('focus')
 
-    for char in value
-      keyCode = this.characterToKeyCode(char)
-      this.keyupdowned('keydown', keyCode)
-      @element.value += char
+    if @element.type == 'number'
+      @element.value = value
+    else
+      for char in value
+        keyCode = this.characterToKeyCode(char)
+        this.keyupdowned('keydown', keyCode)
+        @element.value += char
 
-      this.keypressed(false, false, false, false, char.charCodeAt(0), char.charCodeAt(0))
-      this.keyupdowned('keyup', keyCode)
+        this.keypressed(false, false, false, false, char.charCodeAt(0), char.charCodeAt(0))
+        this.keyupdowned('keyup', keyCode)
 
     this.changed()
     this.input()
@@ -214,11 +225,12 @@ class PoltergeistAgent.Node
     offset = { top: 0, left: 0 }
 
     while win.frameElement
-      rect = window.frameElement.getClientRects()[0]
-      win  = win.parent
-
-      offset.top  += rect.top
-      offset.left += rect.left
+      rect  = win.frameElement.getClientRects()[0]
+      style = win.getComputedStyle(win.frameElement)
+      win   = win.parent
+      
+      offset.top  += rect.top + parseInt(style.getPropertyValue("padding-top"), 10)
+      offset.left += rect.left + parseInt(style.getPropertyValue("padding-left"), 10)
 
     offset
 
