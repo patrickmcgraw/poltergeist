@@ -7,7 +7,8 @@ module Capybara::Poltergeist
     ERROR_MAPPINGS = {
       "Poltergeist.JavascriptError" => JavascriptError,
       "Poltergeist.FrameNotFound"   => FrameNotFound,
-      "Poltergeist.InvalidSelector" => InvalidSelector
+      "Poltergeist.InvalidSelector" => InvalidSelector,
+      "Poltergeist.StatusFailError" => StatusFailError
     }
 
     attr_reader :server, :client, :logger
@@ -65,6 +66,10 @@ module Capybara::Poltergeist
       command 'title'
     end
 
+    def parents(page_id, id)
+      command 'parents', page_id, id
+    end
+
     def find(method, selector)
       result = command('find', method, selector)
       result['ids'].map { |id| [result['page_id'], id] }
@@ -84,6 +89,10 @@ module Capybara::Poltergeist
 
     def delete_text(page_id, id)
       command 'delete_text', page_id, id
+    end
+
+    def attributes(page_id, id)
+      command 'attributes', page_id, id
     end
 
     def attribute(page_id, id, name)

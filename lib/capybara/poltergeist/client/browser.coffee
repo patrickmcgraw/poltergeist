@@ -99,6 +99,8 @@ class Poltergeist.Browser
 
     if errors.length > 0 && @js_errors
       @owner.sendError(new Poltergeist.JavascriptError(errors))
+    else if @page.statusCode() == null && response? && response['status'] == 'fail'
+      @owner.sendError(new Poltergeist.StatusFailError)
     else
       @owner.sendResponse(response)
 
@@ -159,6 +161,12 @@ class Poltergeist.Browser
 
   attribute: (page_id, id, name) ->
     this.sendResponse this.node(page_id, id).getAttribute(name)
+
+  attributes: (page_id, id, name) ->
+    this.sendResponse this.node(page_id, id).getAttributes()
+
+  parents: (page_id, id) ->
+    this.sendResponse this.node(page_id, id).parentIds()
 
   value: (page_id, id) ->
     this.sendResponse this.node(page_id, id).value()

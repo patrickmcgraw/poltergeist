@@ -83,6 +83,14 @@ class PoltergeistAgent.Node
   parentId: ->
     @agent.register(@element.parentNode)
 
+  parentIds: ->
+    ids = []
+    parent = @element.parentNode
+    while parent != document
+      ids.push @agent.register(parent)
+      parent = parent.parentNode
+    ids
+
   find: (method, selector) ->
     @agent.find(method, selector, @element)
 
@@ -147,6 +155,12 @@ class PoltergeistAgent.Node
     window.getSelection().removeAllRanges()
     window.getSelection().addRange(range)
     window.getSelection().deleteFromDocument()
+
+  getAttributes: ->
+    attrs = {}
+    for attr, i in @element.attributes
+      attrs[attr.name] = attr.value.replace("\n","\\n");
+    attrs
 
   getAttribute: (name) ->
     if name == 'checked' || name == 'selected'

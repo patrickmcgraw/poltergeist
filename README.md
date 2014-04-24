@@ -1,6 +1,6 @@
 # Poltergeist - A PhantomJS driver for Capybara #
 
-[![Build Status](https://secure.travis-ci.org/jonleighton/poltergeist.png)](http://travis-ci.org/jonleighton/poltergeist)
+[![Build Status](https://secure.travis-ci.org/teampoltergeist/poltergeist.png)](http://travis-ci.org/teampoltergeist/poltergeist)
 
 Poltergeist is a driver for [Capybara](https://github.com/jnicklas/capybara). It allows you to
 run your Capybara tests on a headless [WebKit](http://webkit.org) browser,
@@ -293,7 +293,7 @@ end
 *   `:extensions` (Array) - An array of JS files to be preloaded into
     the phantomjs browser. Useful for faking unsupported APIs.
 *   `:port` (Fixnum) - The port which should be used to communicate
-    with the PhantomJS process. Default: 44678.
+    with the PhantomJS process. Defaults to a random open port.
 
 ## Troubleshooting ##
 

@@ -4,11 +4,14 @@
 
 *   Added ability to set zoom_factor (Dmytro Budnyk)
 *   Write JSON to the logger, rather than Ruby [Issue #430]
+*   Added ability to access all of a nodes attributes (Jon Rowe)
 
 #### Bug fixes ####
 
 *   Fix `set` appending to `contenteditable` instead of replacing its text
     (Pedro Carriço and Erik Ostrom) [Issue #432]
+*   Raise exception on PhantomJS "status: fail" result (i.e DNS issue) instead
+    of returning minimal HTML body (Dean Holdren) [Issue #473]
 
 ### 1.5.0 ###
 
